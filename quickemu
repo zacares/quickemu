@@ -883,7 +883,11 @@ function configure_display() {
         linux)
             case ${display} in
                 none|spice|spice-app) DISPLAY_DEVICE="virtio-gpu";;
-                *) DISPLAY_DEVICE="virtio-vga";;
+                *) if [ "${arch_vm}" == "aarch64" ]; then
+                       DISPLAY_DEVICE="virtio-gpu"
+                   else
+                       DISPLAY_DEVICE="virtio-vga"
+                   fi;;
             esac;;
         macos)
             # qxl-vga and VGA supports seamless mouse and sane resolutions if only

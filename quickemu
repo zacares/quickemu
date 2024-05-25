@@ -1176,7 +1176,7 @@ function vm_boot() {
     args+=(-machine ${MACHINE_TYPE},smm=${SMM},vmport=off,accel=${QEMU_ACCEL} ${GUEST_TWEAKS}
         ${CPU} ${SMP}
         -m ${RAM_VM} ${BALLOON}
-        -rtc base=localtime,clock=host,driftfix=slew
+        -rtc base=localtime,clock=host,driftfix=${driftfix}
         -pidfile "${VMDIR}/${VMNAME}.pid")
 
     # shellcheck disable=SC2206
@@ -1818,6 +1818,7 @@ disk_format="${disk_format:-qcow2}"
 disk_img="${disk_img:-}"
 disk_size="${disk_size:-16G}"
 display="${display:-sdl}"
+driftfix="${driftfix:-slew}"
 extra_args="${extra_args:-}"
 fixed_iso=""
 floppy=""
@@ -2032,6 +2033,12 @@ if [ -n "${VM}" ] && [ -e "${VM}" ]; then
     if [ -z "${disk_img}" ]; then
         disk_img="${VMDIR}/disk.${disk_format}"
     fi
+
+    # slew for clock drift_fix is not available on aaarch64
+    if [ "${arch_vm}" != "x86_64" ]; then
+        driftfix="none"
+    fi
+
     QEMU_IMG=$(command -v qemu-img)
     QEMU=$(command -v "qemu-system-${arch_vm}")
 

@@ -397,6 +397,11 @@ function configure_cpu() {
         fi
     fi
 
+    # smm and vmport are not available on qemu-system-aarch64
+    if [ "${ARCH_QEMU}" == "x86_64" ]; then
+        MACHINE_TYPE+=",smm=${SMM},vmport=off"
+    fi
+
     case ${guest_os} in
         batocera|freedos|haiku|solaris) MACHINE_TYPE="pc";;
         kolibrios|reactos)
@@ -1181,7 +1186,7 @@ function vm_boot() {
         args+=(-name ${VMNAME},process=${VMNAME})
     fi
     # shellcheck disable=SC2054,SC2206,SC2140
-    args+=(-machine ${MACHINE_TYPE},smm=${SMM},vmport=off,accel=${QEMU_ACCEL} ${GUEST_TWEAKS}
+    args+=(-machine ${MACHINE_TYPE},accel=${QEMU_ACCEL} ${GUEST_TWEAKS}
         ${CPU} ${SMP}
         -m ${RAM_VM} ${BALLOON}
         -rtc base=localtime,clock=host,driftfix=${driftfix}

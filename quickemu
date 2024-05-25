@@ -229,7 +229,7 @@ function get_cpu_info() {
         elif [ "Socket" == "${INFO_NAME}" ]; then
             sysctl -n hw.packages
         elif [ "Vendor" == "${INFO_NAME}" ]; then
-            if [ "${ARCH_HOST}" == "arm64" ]; then
+            if [ "${arch_host}" == "arm64" ]; then
                 sysctl -n machdep.cpu.brand_string | cut -d' ' -f1
             else
                 sysctl -n machdep.cpu.vendor | sed 's/ //g'
@@ -343,14 +343,14 @@ function configure_cpu() {
         QEMU_ACCEL="kvm"
     fi
 
-    if [ "${ARCH_VM}" == "aarch64"  ]; then
+    if [ "${arch_vm}" == "aarch64"  ]; then
         # Support to run aarch64 VMs (best guess; untested)
         # https://qemu-project.gitlab.io/qemu/system/arm/virt.html
-        case ${ARCH_HOST} in
+        case ${arch_host} in
             arm64|aarch64) CPU_MODEL="max"
                            MACHINE_TYPE="virt,highmem=off";;
         esac
-    elif [ "${ARCH_VM}" != "${ARCH_HOST}" ]; then
+    elif [ "${arch_vm}" != "${arch_host}" ]; then
         # If the architecture of the VM is different from the host, disable acceleration
         CPU_MODEL="qemu64"
         CPU_KVM_UNHALT=""
@@ -1810,6 +1810,8 @@ function monitor_send_cmd {
 ### MAIN
 
 # Lowercase variables are used in the VM config file only
+arch_host=$(uname -m)
+arch_vm="${arch_vm:-x86_64}"
 boot="efi"
 cpu_cores=""
 disk_format="${disk_format:-qcow2}"
@@ -1874,16 +1876,6 @@ readonly LAUNCHER=$(basename "${0}")
 readonly DISK_MIN_SIZE=$((197632 * 8))
 readonly VERSION="4.9.5"
 
-# TODO: Make this run the native architecture binary
-ARCH_VM="x86_64"
-ARCH_HOST=$(uname -m)
-QEMU=$(command -v qemu-system-${ARCH_VM})
-QEMU_IMG=$(command -v qemu-img)
-if [ ! -x "${QEMU}" ] || [ ! -x "${QEMU_IMG}" ]; then
-    echo "ERROR! QEMU not found. Please make sure 'qemu-system-${ARCH_VM}' and 'qemu-img' are installed."
-    exit 1
-fi
-
 # Check for gnu tools on macOS
 STAT="stat"
 if command -v gstat &>/dev/null; then
@@ -1893,13 +1885,6 @@ fi
 OS_KERNEL=$(uname -s)
 if [ "${OS_KERNEL}" == "Darwin" ]; then
     display="cocoa"
-fi
-
-QEMU_VER_LONG=$(${QEMU_IMG} --version | head -n 1 | awk '{print $3}')
-QEMU_VER_SHORT=$(echo "${QEMU_VER_LONG//./}" | cut -c1-2)
-if [ "${QEMU_VER_SHORT}" -lt 60 ]; then
-    echo "ERROR! QEMU 6.0.0 or newer is required, detected ${QEMU_VER_LONG}."
-    exit 1
 fi
 
 # Take command line arguments
@@ -2046,6 +2031,20 @@ if [ -n "${VM}" ] && [ -e "${VM}" ]; then
     # if disk_img is not configured, do the right thing.
     if [ -z "${disk_img}" ]; then
         disk_img="${VMDIR}/disk.${disk_format}"
+    fi
+    QEMU_IMG=$(command -v qemu-img)
+    QEMU=$(command -v "qemu-system-${arch_vm}")
+
+    if [ ! -x "${QEMU}" ] || [ ! -x "${QEMU_IMG}" ]; then
+        echo "ERROR! QEMU not found. Please make sure 'qemu-system-${arch_vm}' and 'qemu-img' are installed."
+        exit 1
+    fi
+
+    QEMU_VER_LONG=$(${QEMU_IMG} --version | head -n 1 | awk '{print $3}')
+    QEMU_VER_SHORT=$(echo "${QEMU_VER_LONG//./}" | cut -c1-2)
+    if [ "${QEMU_VER_SHORT}" -lt 60 ]; then
+        echo "ERROR! QEMU 6.0.0 or newer is required, detected ${QEMU_VER_LONG}."
+        exit 1
     fi
 
     # Iterate over any actions and exit.

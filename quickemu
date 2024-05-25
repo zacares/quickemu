@@ -348,7 +348,11 @@ function configure_cpu() {
         # https://qemu-project.gitlab.io/qemu/system/arm/virt.html
         case ${arch_host} in
             arm64|aarch64) CPU_MODEL="max"
-                           MACHINE_TYPE="virt,highmem=off";;
+                           MACHINE_TYPE="virt"
+                           # https://github.com/lima-vm/lima/pull/703
+                           if [ "${QEMU_VER_SHORT}" -le 70 ]; then
+                               MACHINE_TYPE+=",highmem=off"
+                           fi;;
         esac
     elif [ "${arch_vm}" != "${arch_host}" ]; then
         # If the architecture of the VM is different from the host, disable acceleration

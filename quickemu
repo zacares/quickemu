@@ -1143,7 +1143,7 @@ function vm_boot() {
         OS_RELEASE=$(grep PRETTY_NAME /etc/os-release | cut -d'"' -f2)
     fi
 
-    echo "Quickemu ${VERSION} using ${QEMU} v${QEMU_VER_LONG}"
+    echo "Quickemu ${VERSION} using $(basename "${QEMU}") v${QEMU_VER_LONG}"
     echo " - Host:     ${OS_RELEASE} running ${KERNEL_NAME} ${KERNEL_VER} ${KERNEL_NODE}"
 
     # Force to lowercase.

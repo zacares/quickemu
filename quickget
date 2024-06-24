@@ -567,7 +567,7 @@ function releases_alpine() {
     local RELS=""
     RELS=$(web_pipe "https://dl-cdn.alpinelinux.org/alpine/" | grep '"v' | cut -d'"' -f2 | tr -d / | sort -Vr | head -n 10)
     for REL in ${RELS}; do
-        if web_check "https://dl-cdn.alpinelinux.org/alpine/${REL}/releases/x86_64/"; then
+        if web_check "https://dl-cdn.alpinelinux.org/alpine/${REL}/releases/${ARCH_GUEST}/"; then
             echo -n "${REL} "
         fi
     done
@@ -1436,6 +1436,7 @@ function make_vm_config() {
         echo "Making ${CONF_FILE}"
         cat << EOF > "${CONF_FILE}"
 #!$(which quickemu) --vm
+arch_vm="${ARCH_QEMU}"
 guest_os="${GUEST}"
 disk_img="${VM_PATH}/disk.qcow2"
 ${IMAGE_TYPE}="${VM_PATH}/${IMAGE_FILE}"
@@ -1555,10 +1556,10 @@ function get_alma() {
 function get_alpine() {
     local HASH=""
     local ISO=""
-    local URL="https://dl-cdn.alpinelinux.org/alpine/${RELEASE}/releases/x86_64"
+    local URL="https://dl-cdn.alpinelinux.org/alpine/${RELEASE}/releases/${ARCH_GUEST}"
     local VERSION=""
     VERSION=$(web_pipe "${URL}/latest-releases.yaml" | awk '/"Xen"/{found=0} {if(found) print} /"Virtual"/{found=1}' | grep 'version:' | awk '{print $2}')
-    ISO="alpine-virt-${VERSION}-x86_64.iso"
+    ISO="alpine-virt-${VERSION}-${ARCH_GUEST}.iso"
     HASH=$(web_pipe "${URL}/latest-releases.yaml" | awk '/"Xen"/{found=0} {if(found) print} /"Virtual"/{found=1}' | grep 'sha256:' | awk '{print $2}')
     echo "${URL}/${ISO} ${HASH}"
 }
@@ -3390,6 +3391,7 @@ if ((BASH_VERSINFO[0] < 4)); then
     exit 1
 fi
 
+# TODO: Move supported archs to distro info and check that from releases_
 # ARCH_GUEST is the common string used in the URL
 # ARCH_QEMU is the suffix used by to determine the qemu-system-<arch> to use and what is written into the VM config
 ARCH_HOST=$(uname -m)
